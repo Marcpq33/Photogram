@@ -1,5 +1,6 @@
 package com.photogram.feature.auth
 
+import android.app.Activity
 import com.photogram.feature.auth.BuildConfig
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -53,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -124,9 +126,10 @@ fun AuthScreen(
         viewModel.devBypassNavEvent.collect { onAuthSuccess() }
     }
 
+    val activity = LocalContext.current as Activity
     PhotogramTheme(darkTheme = true) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AuthContent(uiState = uiState, onAction = viewModel::onAction)
+            AuthContent(uiState = uiState, onAction = viewModel::onAction, activity = activity)
             // ── Email confirmation overlay ───────────────────────────────────────
             // Shown when signUp succeeded but Supabase requires the user to confirm
             // their email before a session is issued. Rendered on top of AuthContent.
@@ -166,6 +169,7 @@ fun AuthScreen(
 private fun AuthContent(
     uiState: AuthUiState,
     onAction: (AuthUiAction) -> Unit,
+    activity: Activity,
 ) {
     val strings = AuthStrings.forCode(uiState.selectedLanguageCode)
     Box(
@@ -199,7 +203,7 @@ private fun AuthContent(
             HeroLine(isCreateMode = uiState.isCreateMode, strings = strings)
             Spacer(Modifier.height(40.dp))
 
-                SocialRow(onAction = onAction, strings = strings)
+                SocialRow(onAction = onAction, strings = strings, activity = activity)
                 Spacer(Modifier.height(22.dp))
                 OrEmailDivider(isCreateMode = uiState.isCreateMode, strings = strings)
                 Spacer(Modifier.height(22.dp))
@@ -435,13 +439,17 @@ private fun HeroLine(isCreateMode: Boolean, strings: AuthStrings) {
 // ── Social buttons ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun SocialRow(onAction: (AuthUiAction) -> Unit, strings: AuthStrings) {
+private fun SocialRow(
+    onAction: (AuthUiAction) -> Unit,
+    strings: AuthStrings,
+    activity: Activity,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         GoogleButton(
-            onClick = { onAction(AuthUiAction.GoogleSignInClicked) },
+            onClick = { onAction(AuthUiAction.GoogleSignInClicked(activity)) },
             label = strings.continueWithGoogle,
             modifier = Modifier.fillMaxWidth(),
         )

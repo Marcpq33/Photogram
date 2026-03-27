@@ -1,5 +1,6 @@
 package com.photogram.feature.auth
 
+import android.app.Activity
 import com.photogram.core.common.PhotogramResult
 
 interface AuthRepository {
@@ -30,4 +31,34 @@ interface AuthRepository {
      * Those users must reset their password before using this flow.
      */
     suspend fun signIn(email: String, password: String): PhotogramResult<Unit>
+
+    /**
+     * Signs in with a Google account via Credential Manager (native Android bottom sheet).
+     *
+     * Requires [activity] for the Credential Manager UI. Uses GetSignInWithGoogleOption
+     * with a SHA-256 nonce, then exchanges the Google ID token for a Supabase session via
+     * the IDToken provider.
+     *
+     * Returns [PhotogramResult.Success] when the Supabase session is established.
+     * Returns [PhotogramResult.Error] with a null message when the user cancels (silent — no UI error).
+     * Returns [PhotogramResult.Error] with a message for all other failures.
+     *
+     * Prerequisite: GOOGLE_WEB_CLIENT_ID must be set in local.properties and match the
+     * Web Client ID configured in Supabase → Authentication → Providers → Google.
+     */
+    suspend fun signInWithGoogle(activity: Activity): PhotogramResult<Unit>
+
+    /**
+     * Initiates Apple sign-in via Supabase OAuth browser flow.
+     *
+     * Opens the system browser (or Chrome Custom Tab) with the Apple OAuth URL.
+     * The function returns after launching the browser — the session is established
+     * asynchronously when the browser redirects to io.photogram://callback, which
+     * MainActivity.handleAuthDeeplink() processes via supabaseClient.handleDeeplinks().
+     *
+     * Returns [PhotogramResult.Success] when the browser was launched successfully.
+     * Returns [PhotogramResult.Error] if the OAuth URL cannot be generated or the browser
+     * cannot be opened.
+     */
+    suspend fun initiateAppleSignIn(): PhotogramResult<Unit>
 }

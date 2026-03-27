@@ -1,5 +1,7 @@
 package com.photogram.feature.auth
 
+import android.app.Activity
+
 sealed interface AuthUiAction {
     data class EmailChanged(val email: String) : AuthUiAction
     data class PasswordChanged(val password: String) : AuthUiAction
@@ -12,8 +14,8 @@ sealed interface AuthUiAction {
     data object LanguageSelectorClicked : AuthUiAction
     data object LanguageSheetDismissed : AuthUiAction
     data class LanguageSelected(val code: String) : AuthUiAction
-    // Placeholder — no OAuth SDK wired yet; shows informational error until SDK integrated
-    data object GoogleSignInClicked : AuthUiAction
+    // Activity required by Credential Manager to present the Google account picker sheet.
+    data class GoogleSignInClicked(val activity: Activity) : AuthUiAction
     data object AppleSignInClicked : AuthUiAction
     /**
      * Dismissed from the "check your inbox" screen shown after a signUp with email confirmation

@@ -66,15 +66,34 @@ class AuthViewModel @Inject constructor(
                 _uiState.update { it.copy(selectedLanguageCode = action.code, isLanguageSheetVisible = false) }
                 viewModelScope.launch { userPreferencesRepository.setLanguage(action.code) }
             }
-            // TODO: integrate Google Sign-In SDK (e.g. Credential Manager + GoogleIdTokenRequestOptions)
-            AuthUiAction.GoogleSignInClicked -> _uiState.update {
-                val strings = AuthStrings.forCode(it.selectedLanguageCode)
-                it.copy(error = strings.errorGoogleNotIntegrated)
+            is AuthUiAction.GoogleSignInClicked -> viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                when (val result = authRepository.signInWithGoogle(action.activity)) {
+                    is PhotogramResult.Success -> {
+                        // Session established — AppViewModel.observeSession emits Authenticated(isNew=true)
+                        // → authEvent fires → PhotogramApp navigates to MainGraph.
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+                    is PhotogramResult.Error -> _uiState.update {
+                        // null message = user cancelled picker — clear loading silently, no error shown.
+                        it.copy(isLoading = false, error = result.message)
+                    }
+                    is PhotogramResult.Loading -> Unit
+                }
             }
-            // TODO: integrate Sign in with Apple via AppAuth or backend token exchange
-            AuthUiAction.AppleSignInClicked -> _uiState.update {
-                val strings = AuthStrings.forCode(it.selectedLanguageCode)
-                it.copy(error = strings.errorAppleNotIntegrated)
+            AuthUiAction.AppleSignInClicked -> viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                when (val result = authRepository.initiateAppleSignIn()) {
+                    is PhotogramResult.Success -> {
+                        // Browser launched. Session arrives later via deep link → AppViewModel
+                        // observes Authenticated(isNew=true) → authEvent → MainGraph navigation.
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+                    is PhotogramResult.Error -> _uiState.update {
+                        it.copy(isLoading = false, error = result.message)
+                    }
+                    is PhotogramResult.Loading -> Unit
+                }
             }
             // Dismissed from the "check your inbox" screen: reset to sign-in mode so the
             // user can sign in once they have confirmed their account.
