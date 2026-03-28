@@ -80,3 +80,8 @@ memory/test_credentials.md
 
 # Mobile development
 android-sdk/photogram.zip
+-e 
+# Environment files
+*.env
+*.env.*
+photogram.zip
