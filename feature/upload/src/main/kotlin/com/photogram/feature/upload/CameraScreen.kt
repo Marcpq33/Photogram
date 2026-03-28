@@ -6,6 +6,8 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import coil3.compose.AsyncImage
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -87,6 +89,8 @@ private val CameraTerracotta = Color(0xFFC9A96E)
 @Composable
 fun CameraScreen(
     onClose: () -> Unit,
+    // Called when the user selects STORY as destination after capture — local publish signal.
+    onStoryPublished: () -> Unit = {},
     onUploadPlaceholder: (String) -> Unit,
     viewModel: CameraViewModel = hiltViewModel(),
 ) {
@@ -99,8 +103,10 @@ fun CameraScreen(
             when (event) {
                 CameraNavEvent.NavigateUp ->
                     onClose()
-                is CameraNavEvent.UploadPlaceholder ->
+                is CameraNavEvent.UploadPlaceholder -> {
+                    if (event.destination == CameraDestination.STORY) onStoryPublished()
                     onUploadPlaceholder(event.destination.name.lowercase() + " — upload coming soon")
+                }
             }
         }
     }
@@ -156,10 +162,9 @@ fun CameraScreen(
             currentMode   = uiState.mode,
         )
 
-        // Bottom controls overlay (capture + mode tabs)
+        // Bottom controls overlay (capture row only — mode is always STORY)
         BottomControls(
             modifier = Modifier.align(Alignment.BottomCenter),
-            mode     = uiState.mode,
             isRecording = uiState.isRecording,
             onCapture = {
                 val ic = imageCaptureRef.value
@@ -185,10 +190,19 @@ fun CameraScreen(
                 }
             },
             onStopRecording = { activeRecordingRef.value?.stop() },
-            onFlipLens      = { viewModel.onAction(CameraUiAction.ToggleLens) },
-            onOpenPicker    = { pickerLauncher.launch(PickVisualMediaRequest(ImageAndVideo)) },
-            onModeSelected  = { viewModel.onAction(CameraUiAction.ModeSelected(it)) },
+            onFlipLens   = { viewModel.onAction(CameraUiAction.ToggleLens) },
+            onOpenPicker = { pickerLauncher.launch(PickVisualMediaRequest(ImageAndVideo)) },
         )
+
+        // Story preview/confirm overlay
+        val previewUri = uiState.capturedUri
+        if (uiState.showStoryPreview && previewUri != null) {
+            StoryPreviewOverlay(
+                uri       = previewUri,
+                onPublish = { viewModel.onAction(CameraUiAction.ConfirmStoryPublish) },
+                onDiscard = { viewModel.onAction(CameraUiAction.DiscardStoryCapture) },
+            )
+        }
 
         // Post-capture destination picker
         if (uiState.showDestinationPicker) {
@@ -323,14 +337,12 @@ private fun TopBar(
 @Composable
 private fun BottomControls(
     modifier: Modifier,
-    mode: CameraMode,
     isRecording: Boolean,
     onCapture: () -> Unit,
     onStartRecording: () -> Unit,
     onStopRecording: () -> Unit,
     onFlipLens: () -> Unit,
     onOpenPicker: () -> Unit,
-    onModeSelected: (CameraMode) -> Unit,
 ) {
     val strings = CameraStrings.forCode(LocalLanguageCode.current)
     Column(
@@ -347,7 +359,7 @@ private fun BottomControls(
     ) {
         Spacer(Modifier.height(28.dp))
 
-        // Capture row: gallery | shutter | flip
+        // Capture row: picker | shutter | flip
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -375,22 +387,6 @@ private fun BottomControls(
                     contentDescription = strings.flipCamera,
                     tint               = Color.White,
                     modifier           = Modifier.size(28.dp),
-                )
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // Mode tabs: STORY | GALLERY | ALBUM
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            CameraMode.entries.forEach { cameraMode ->
-                ModeTab(
-                    label    = cameraMode.name,
-                    selected = cameraMode == mode,
-                    onClick  = { onModeSelected(cameraMode) },
                 )
             }
         }
@@ -449,24 +445,6 @@ private fun CaptureButton(
     }
 }
 
-// ── Mode tab ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun ModeTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        text      = label,
-        modifier  = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (selected) CameraTerracotta.copy(alpha = 0.22f) else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 7.dp),
-        color         = if (selected) CameraTerracotta else Color.White.copy(alpha = 0.55f),
-        fontSize      = 11.sp,
-        fontWeight    = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        letterSpacing = 1.2.sp,
-    )
-}
-
 // ── Permission denied overlay ─────────────────────────────────────────────────
 
 @Composable
@@ -515,6 +493,80 @@ private fun PermissionDeniedOverlay(onClose: () -> Unit) {
     }
 }
 
+// ── Story preview overlay ─────────────────────────────────────────────────────
+
+@Composable
+private fun StoryPreviewOverlay(
+    uri:       Uri,
+    onPublish: () -> Unit,
+    onDiscard: () -> Unit,
+) {
+    val strings = CameraStrings.forCode(LocalLanguageCode.current)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+    ) {
+        AsyncImage(
+            model    = uri,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Bottom action row
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.70f)),
+                    ),
+                )
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+        ) {
+            // Discard — ghost style
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(50.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50.dp))
+                    .clickable(onClick = onDiscard)
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text       = strings.discardCapture,
+                    color      = Color.White.copy(alpha = 0.80f),
+                    fontWeight = FontWeight.Medium,
+                    fontSize   = 15.sp,
+                )
+            }
+
+            // Publish — filled terracotta
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(CameraTerracotta)
+                    .clickable(onClick = onPublish)
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text       = strings.publishStory,
+                    color      = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 15.sp,
+                )
+            }
+        }
+    }
+}
+
 // ── Capture helpers ───────────────────────────────────────────────────────────
 
 private fun cameraPermissions(): Array<String> = buildList {
@@ -533,23 +585,14 @@ private fun capturePhoto(
     context: Context,
     onCaptured: (Uri) -> Unit,
 ) {
-    val contentValues = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, "photogram_${System.currentTimeMillis()}")
-        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Photogram")
-        }
-    }
+    // Use File-based output for a guaranteed non-null URI on all Android versions.
+    val file = File(context.filesDir, "photogram_${System.currentTimeMillis()}.jpg")
     imageCapture.takePicture(
-        ImageCapture.OutputFileOptions.Builder(
-            context.contentResolver,
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues,
-        ).build(),
+        ImageCapture.OutputFileOptions.Builder(file).build(),
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                output.savedUri?.let(onCaptured)
+                onCaptured(Uri.fromFile(file))
             }
             override fun onError(e: ImageCaptureException) { /* capture failed — silent */ }
         },

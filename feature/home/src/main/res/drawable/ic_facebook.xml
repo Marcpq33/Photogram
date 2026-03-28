@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Facebook brand icon — the bold "f" letterform.
+    White path only; blue background is applied by the enclosing Box in Compose.
+    viewportWidth/Height = 24.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!--
+        Facebook "f":
+        - Stem runs from ~y=8.5 down to y=22.
+        - Upper crossbar at y≈9.5, width ~4.5.
+        - Lower crossbar at y≈13, width ~3.5.
+        - Capital curves at top-right.
+        Coordinates are tuned so the "f" sits centred on the 24×24 grid,
+        matching the weight and proportions of the official Facebook mark.
+    -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M14.5,3
+            C11.46,3 9.5,5.1 9.5,8.2
+            L9.5,10.5
+            L7,10.5
+            L7,13.5
+            L9.5,13.5
+            L9.5,22
+            L13,22
+            L13,13.5
+            L15.5,13.5
+            L16,10.5
+            L13,10.5
+            L13,8.5
+            C13,7.67 13.38,7 14.5,7
+            L16,7
+            L16,3.2
+            C15.6,3.1 15.1,3 14.5,3Z" />
+
+</vector>

@@ -12,6 +12,8 @@ internal sealed interface CameraUiAction {
     data class MediaPicked(val uri: Uri) : CameraUiAction
     data object RecordingStarted : CameraUiAction
     data class RecordingStopped(val uri: Uri?) : CameraUiAction
+    data object ConfirmStoryPublish : CameraUiAction
+    data object DiscardStoryCapture : CameraUiAction
     data object DestinationPickerDismissed : CameraUiAction
     data class DestinationSelected(val destination: CameraDestination) : CameraUiAction
 }

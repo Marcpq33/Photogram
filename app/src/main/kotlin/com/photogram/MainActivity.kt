@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
                         startDestination = dest,
                         authEvent = appViewModel.authEvent,
                         languageCode = languageCode,
+                        onSignOut = { appViewModel.signOut() },
                     )
                 }
             }

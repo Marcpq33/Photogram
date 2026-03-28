@@ -11,12 +11,12 @@ sealed interface AuthUiAction {
     // Toggles sign-in ↔ create-account visual mode; no backend difference
     data object ToggleModeClicked : AuthUiAction
     data object TogglePasswordVisibility : AuthUiAction
+    data object ToggleKeepSignedIn : AuthUiAction
     data object LanguageSelectorClicked : AuthUiAction
     data object LanguageSheetDismissed : AuthUiAction
     data class LanguageSelected(val code: String) : AuthUiAction
     // Activity required by Credential Manager to present the Google account picker sheet.
     data class GoogleSignInClicked(val activity: Activity) : AuthUiAction
-    data object AppleSignInClicked : AuthUiAction
     /**
      * Dismissed from the "check your inbox" screen shown after a signUp with email confirmation
      * required. Resets [AuthUiState.pendingEmailConfirmation] and switches to sign-in mode so the

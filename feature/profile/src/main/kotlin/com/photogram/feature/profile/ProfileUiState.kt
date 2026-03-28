@@ -4,6 +4,9 @@ import android.net.Uri
 
 data class ProfileUiState(
     val displayName: String = "",
+    val username: String = "",
+    val bio: String = "",
+    val avatarUri: String = "",
     val capturingSinceYear: Int = 2025,
     val totalPhotos: Int = 0,
     val albumsCount: Int = 0,

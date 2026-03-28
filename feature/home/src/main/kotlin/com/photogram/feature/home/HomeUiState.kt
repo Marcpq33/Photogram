@@ -8,6 +8,8 @@ internal data class HomeUiState(
     val unreadMessages: Int = 0,
     val showCameraSheet: Boolean = false,
     val currentUserAvatarUrl: String? = null,
+    /** True once (real users only) until dismissed or any action taken. */
+    val showInviteWelcome: Boolean = false,
 )
 
 internal data class HomeStory(
@@ -15,7 +17,16 @@ internal data class HomeStory(
     val label: String,
     val coverColorArgb: Long,
     val isAddNew: Boolean = false,
+    /** True when the user already has a published story but can still add more.
+     *  Renders a small "+" badge on the own-story bubble. */
+    val canAddMore: Boolean = false,
     val imageUrl: String? = null,
+    /**
+     * True after the current user has tapped this story bubble at least once.
+     * Local/in-memory — resets on process death.
+     * Drives ring appearance (gold sweep gradient → muted) and row ordering (unseen first).
+     */
+    val isSeen: Boolean = false,
 )
 
 internal data class HomeFeaturedMemory(

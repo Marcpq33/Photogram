@@ -32,6 +32,17 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(selectedLanguageCode = code) }
             }
         }
+        viewModelScope.launch {
+            // Observe real user profile data so the Settings header reflects
+            // the authenticated user instead of hardcoded placeholder content.
+            userPreferencesRepository.userData.collect { userData ->
+                _uiState.update { it.copy(
+                    displayName = userData.displayName,
+                    email       = userData.email,
+                    avatarUri   = userData.avatarUri,
+                ) }
+            }
+        }
     }
 
     fun onAction(action: SettingsUiAction) {

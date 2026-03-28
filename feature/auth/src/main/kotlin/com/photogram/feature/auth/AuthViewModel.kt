@@ -56,6 +56,9 @@ class AuthViewModel @Inject constructor(
             AuthUiAction.TogglePasswordVisibility -> _uiState.update {
                 it.copy(isPasswordVisible = !it.isPasswordVisible)
             }
+            AuthUiAction.ToggleKeepSignedIn -> _uiState.update {
+                it.copy(keepSignedIn = !it.keepSignedIn)
+            }
             AuthUiAction.LanguageSelectorClicked -> _uiState.update {
                 it.copy(isLanguageSheetVisible = true)
             }
@@ -76,20 +79,6 @@ class AuthViewModel @Inject constructor(
                     }
                     is PhotogramResult.Error -> _uiState.update {
                         // null message = user cancelled picker — clear loading silently, no error shown.
-                        it.copy(isLoading = false, error = result.message)
-                    }
-                    is PhotogramResult.Loading -> Unit
-                }
-            }
-            AuthUiAction.AppleSignInClicked -> viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, error = null) }
-                when (val result = authRepository.initiateAppleSignIn()) {
-                    is PhotogramResult.Success -> {
-                        // Browser launched. Session arrives later via deep link → AppViewModel
-                        // observes Authenticated(isNew=true) → authEvent → MainGraph navigation.
-                        _uiState.update { it.copy(isLoading = false) }
-                    }
-                    is PhotogramResult.Error -> _uiState.update {
                         it.copy(isLoading = false, error = result.message)
                     }
                     is PhotogramResult.Loading -> Unit
@@ -135,7 +124,19 @@ class AuthViewModel @Inject constructor(
                 // Session established → AppViewModel.observeSession picks up
                 // SessionStatus.Authenticated(isNew=true) and emits authEvent,
                 // which PhotogramApp uses to navigate to MainGraph.
-                SignUpOutcome.SessionEstablished -> _uiState.update { it.copy(isLoading = false) }
+                SignUpOutcome.SessionEstablished -> {
+                    // Persist the display name entered during registration so Settings and
+                    // Edit Profile show real data immediately after sign-up.
+                    val enteredName = _uiState.value.fullName.trim()
+                    if (enteredName.isNotBlank()) {
+                        userPreferencesRepository.setProfile(
+                            displayName = enteredName,
+                            username    = "",
+                            bio         = "",
+                        )
+                    }
+                    _uiState.update { it.copy(isLoading = false) }
+                }
                 // No session yet — Supabase "Confirm email" is enabled. Show the inbox screen.
                 // AppViewModel.authEvent will fire once the user confirms and signs in.
                 SignUpOutcome.AwaitingEmailConfirmation -> _uiState.update {
@@ -155,6 +156,10 @@ class AuthViewModel @Inject constructor(
     private suspend fun handleSignIn(email: String, password: String) {
         when (val result = authRepository.signIn(email, password)) {
             is PhotogramResult.Success -> {
+                // Persist the user's "keep signed in" choice before clearing loading state.
+                // AppViewModel.startDestination reads this on the next cold start to decide
+                // whether to auto-enter MainGraph or require a new sign-in.
+                userPreferencesRepository.setKeepSignedIn(_uiState.value.keepSignedIn)
                 // Session established → AppViewModel handles navigation via authEvent.
                 _uiState.update { it.copy(isLoading = false) }
             }

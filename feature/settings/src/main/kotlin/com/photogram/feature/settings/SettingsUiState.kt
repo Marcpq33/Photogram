@@ -1,8 +1,9 @@
 package com.photogram.feature.settings
 
 data class SettingsUiState(
-    val displayName: String = "Elena Marchetti",
-    val email: String = "elena.marchetti@studio.it",
+    val displayName: String = "",
+    val email: String = "",
+    val avatarUri: String = "",
     val isDarkMode: Boolean = true,
     val selectedLanguageCode: String = "EN",
     val storageUsedGb: Float = 2.4f,

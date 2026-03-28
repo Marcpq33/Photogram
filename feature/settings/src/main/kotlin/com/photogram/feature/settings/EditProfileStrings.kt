@@ -15,6 +15,7 @@ internal data class EditProfileStrings(
     val sectionContact: String,
     val emailLabel: String,
     val saveButton: String,
+    val saveSuccessMessage: String,
 ) {
     companion object {
         fun forCode(code: String): EditProfileStrings = when (code) {
@@ -33,6 +34,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "CONTACTO",
                 emailLabel          = "Email",
                 saveButton          = "GUARDAR",
+                saveSuccessMessage  = "Perfil guardado correctamente",
             )
             "FR" -> EditProfileStrings(
                 title               = "Modifier le profil",
@@ -49,6 +51,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "CONTACT",
                 emailLabel          = "Email",
                 saveButton          = "ENREGISTRER",
+                saveSuccessMessage  = "Profil enregistré avec succès",
             )
             "IT" -> EditProfileStrings(
                 title               = "Modifica profilo",
@@ -65,6 +68,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "CONTATTO",
                 emailLabel          = "Email",
                 saveButton          = "SALVA",
+                saveSuccessMessage  = "Profilo salvato correttamente",
             )
             "ZH" -> EditProfileStrings(
                 title               = "编辑资料",
@@ -81,6 +85,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "联系方式",
                 emailLabel          = "邮箱",
                 saveButton          = "保存",
+                saveSuccessMessage  = "个人资料已保存",
             )
             "JA" -> EditProfileStrings(
                 title               = "プロフィール編集",
@@ -97,6 +102,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "連絡先",
                 emailLabel          = "メール",
                 saveButton          = "保存",
+                saveSuccessMessage  = "プロフィールを保存しました",
             )
             else -> EditProfileStrings( // EN
                 title               = "Edit profile",
@@ -113,6 +119,7 @@ internal data class EditProfileStrings(
                 sectionContact      = "CONTACT",
                 emailLabel          = "Email",
                 saveButton          = "SAVE",
+                saveSuccessMessage  = "Profile saved successfully",
             )
         }
     }

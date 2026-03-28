@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,16 +38,25 @@ class ProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            if (userPreferences.userData.first().isDemoMode) {
-                _uiState.value = ProfileUiState(
-                    displayName        = "Alex Morgan",
-                    capturingSinceYear = 2022,
-                    totalPhotos        = 247,
-                    albumsCount        = 4,
-                    daysStreak         = 21,
-                    recaps             = ProfileDefaults.recaps,
-                    albums             = ProfileDefaults.albums,
-                )
+            userPreferences.userData.collect { userData ->
+                if (userData.isDemoMode) {
+                    _uiState.value = ProfileUiState(
+                        displayName        = "Alex Morgan",
+                        capturingSinceYear = 2022,
+                        totalPhotos        = 247,
+                        albumsCount        = 4,
+                        daysStreak         = 21,
+                        recaps             = ProfileDefaults.recaps,
+                        albums             = ProfileDefaults.albums,
+                    )
+                } else {
+                    _uiState.update { it.copy(
+                        displayName = userData.displayName,
+                        username    = userData.username,
+                        bio         = userData.bio,
+                        avatarUri   = userData.avatarUri,
+                    ) }
+                }
             }
         }
     }

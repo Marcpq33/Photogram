@@ -4,5 +4,6 @@ sealed interface EditProfileUiAction {
     data class DisplayNameChanged(val value: String) : EditProfileUiAction
     data class UsernameChanged(val value: String)    : EditProfileUiAction
     data class BioChanged(val value: String)         : EditProfileUiAction
+    data class AvatarSelected(val uri: String)       : EditProfileUiAction
     data object SaveClicked                          : EditProfileUiAction
 }

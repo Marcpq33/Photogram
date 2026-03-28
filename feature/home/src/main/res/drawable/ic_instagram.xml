@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Instagram brand icon — rounded-square camera body, circular lens, flash dot.
+    White paths only; gradient background is applied by the enclosing Box in Compose.
+    viewportWidth/Height = 24.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!--
+        Camera body — rounded rectangle outline (stroke via filled ring).
+        Outer rect 2→22, inner rect 4→20, corner radius ≈ 5.
+    -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M7.6,2
+            L16.4,2
+            C19.48,2 22,4.52 22,7.6
+            L22,16.4
+            C22,19.48 19.48,22 16.4,22
+            L7.6,22
+            C4.52,22 2,19.48 2,16.4
+            L2,7.6
+            C2,4.52 4.52,2 7.6,2Z
+            M7.6,4
+            C5.623,4 4,5.623 4,7.6
+            L4,16.4
+            C4,18.377 5.623,20 7.6,20
+            L16.4,20
+            C18.377,20 20,18.377 20,16.4
+            L20,7.6
+            C20,5.623 18.377,4 16.4,4
+            L7.6,4Z" />
+
+    <!-- Lens — filled ring (outer circle r=4.5, inner r=2.75, centred at 12,12) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M12,7.5
+            C9.515,7.5 7.5,9.515 7.5,12
+            C7.5,14.485 9.515,16.5 12,16.5
+            C14.485,16.5 16.5,14.485 16.5,12
+            C16.5,9.515 14.485,7.5 12,7.5Z
+            M12,9.5
+            C13.38,9.5 14.5,10.619 14.5,12
+            C14.5,13.381 13.38,14.5 12,14.5
+            C10.619,14.5 9.5,13.381 9.5,12
+            C9.5,10.619 10.619,9.5 12,9.5Z" />
+
+    <!-- Flash dot — small filled circle, top-right area -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M17.5,5.75
+            C17.5,6.44 16.94,7 16.25,7
+            C15.56,7 15,6.44 15,5.75
+            C15,5.06 15.56,4.5 16.25,4.5
+            C16.94,4.5 17.5,5.06 17.5,5.75Z" />
+
+</vector>

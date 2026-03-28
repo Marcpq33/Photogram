@@ -1,6 +1,5 @@
 package com.photogram.feature.profile
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
@@ -33,15 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import com.photogram.core.designsystem.LocalLanguageCode
 import com.photogram.core.designsystem.PhotogramBottomNav
 import com.photogram.core.designsystem.PhotogramNavDestination
@@ -64,11 +57,6 @@ private val AvatarBg      = Color(0xFF3A2518)
 private val SettingsBg    = Color(0x33FFFFFF)
 private val StatCardBg    = Color(0xFF0B0B0D)
 private val TextMuted     = Color(0x66FFFFFF)
-private val PotBody       = Color(0xFF9B5A38)
-private val PotRimColor   = Color(0xFFB5704A)
-private val StemColor     = Color(0xFF4A7A44)
-private val BudOuter      = Color(0xFFF5EDE0)
-private val BudInner      = Color(0xFFD8C8B8)
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -192,114 +180,30 @@ private fun HeroSection(uiState: ProfileUiState) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Plant with avatar overlapping the pot base
-            Box(contentAlignment = Alignment.BottomCenter) {
-                PlantIllustration(modifier = Modifier.size(width = 150.dp, height = 165.dp))
-                ProfileAvatar(
-                    modifier = Modifier
-                        .size(62.dp)
-                        .offset(y = 20.dp),
+            if (uiState.username.isNotBlank()) {
+                Text(
+                    text  = "@${uiState.username}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        letterSpacing = 1.sp,
+                        fontSize      = 12.sp,
+                        fontWeight    = FontWeight.Normal,
+                    ),
+                    color = ProfileGold.copy(alpha = 0.70f),
                 )
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(32.dp)) // clears the 20dp avatar offset + gap
+            ProfileAvatar(avatarUri = uiState.avatarUri, modifier = Modifier.size(72.dp))
+            Spacer(Modifier.height(20.dp))
             IdentityBlock(uiState = uiState)
         }
     }
 }
 
-// ── Plant illustration ────────────────────────────────────────────────────────
-
-@Composable
-private fun PlantIllustration(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) { drawPlant() }
-}
-
-private fun DrawScope.drawBud(cx: Float, cy: Float, radius: Float) {
-    drawCircle(color = BudOuter,                              radius = radius,        center = Offset(cx, cy))
-    drawCircle(color = BudInner,                              radius = radius * 0.55f, center = Offset(cx, cy))
-    drawCircle(color = Color(0xFFB89070).copy(alpha = 0.40f), radius = radius * 0.20f, center = Offset(cx, cy))
-}
-
-private fun DrawScope.drawPlant() {
-    val w  = size.width
-    val h  = size.height
-    val cx = w / 2f
-
-    // Pot body (trapezoid)
-    val potTopY       = h * 0.54f
-    val potBottomY    = h * 0.96f
-    val potTopHalf    = w * 0.30f
-    val potBottomHalf = w * 0.22f
-    val potPath = Path().apply {
-        moveTo(cx - potTopHalf,    potTopY)
-        lineTo(cx + potTopHalf,    potTopY)
-        lineTo(cx + potBottomHalf, potBottomY)
-        lineTo(cx - potBottomHalf, potBottomY)
-        close()
-    }
-    drawPath(potPath, color = PotBody)
-
-    // Pot rim
-    val rimH    = h * 0.055f
-    val rimHalf = potTopHalf * 1.10f
-    drawRoundRect(
-        color        = PotRimColor,
-        topLeft      = Offset(cx - rimHalf, potTopY - rimH * 0.6f),
-        size         = Size(rimHalf * 2f, rimH),
-        cornerRadius = CornerRadius(rimH / 2f),
-    )
-
-    // Pot highlight
-    drawLine(
-        color       = Color.White.copy(alpha = 0.12f),
-        start       = Offset(cx - potTopHalf * 0.45f, potTopY + rimH * 0.8f),
-        end         = Offset(cx - potBottomHalf * 0.45f, potBottomY - h * 0.02f),
-        strokeWidth = 2.dp.toPx(),
-        cap         = StrokeCap.Round,
-    )
-
-    // Stems
-    val stemBase = potTopY - rimH * 0.2f
-    val sw       = 2.5f.dp.toPx()
-
-    val leftStem = Path().apply {
-        moveTo(cx - w * 0.03f, stemBase)
-        cubicTo(cx - w * 0.18f, stemBase - h * 0.12f, cx - w * 0.26f, stemBase - h * 0.24f, cx - w * 0.20f, stemBase - h * 0.38f)
-    }
-    drawPath(leftStem, color = StemColor, style = Stroke(width = sw, cap = StrokeCap.Round))
-
-    val centerStem = Path().apply {
-        moveTo(cx + w * 0.01f, stemBase)
-        cubicTo(cx + w * 0.03f, stemBase - h * 0.14f, cx - w * 0.03f, stemBase - h * 0.28f, cx + w * 0.02f, stemBase - h * 0.44f)
-    }
-    drawPath(centerStem, color = StemColor, style = Stroke(width = sw, cap = StrokeCap.Round))
-
-    val rightStem = Path().apply {
-        moveTo(cx + w * 0.05f, stemBase)
-        cubicTo(cx + w * 0.16f, stemBase - h * 0.13f, cx + w * 0.24f, stemBase - h * 0.28f, cx + w * 0.18f, stemBase - h * 0.40f)
-    }
-    drawPath(rightStem, color = StemColor, style = Stroke(width = sw, cap = StrokeCap.Round))
-
-    // Small leaf on center stem
-    val leafX = cx - w * 0.03f
-    val leafY = stemBase - h * 0.22f
-    val leaf  = Path().apply {
-        moveTo(leafX, leafY)
-        cubicTo(leafX - w * 0.10f, leafY - h * 0.04f, leafX - w * 0.10f, leafY + h * 0.04f, leafX, leafY)
-    }
-    drawPath(leaf, color = StemColor.copy(alpha = 0.75f), style = Stroke(width = sw * 0.75f, cap = StrokeCap.Round))
-
-    // Buds
-    val br = w * 0.048f
-    drawBud(cx - w * 0.20f, stemBase - h * 0.38f, br)
-    drawBud(cx + w * 0.02f, stemBase - h * 0.44f, br)
-    drawBud(cx + w * 0.18f, stemBase - h * 0.40f, br)
-}
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ProfileAvatar(modifier: Modifier = Modifier) {
+private fun ProfileAvatar(avatarUri: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(CircleShape)
@@ -307,12 +211,23 @@ private fun ProfileAvatar(modifier: Modifier = Modifier) {
             .background(AvatarBg),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector        = Icons.Default.Person,
-            contentDescription = "Profile avatar",
-            tint               = Color.White.copy(alpha = 0.80f),
-            modifier           = Modifier.fillMaxSize(0.55f),
-        )
+        if (avatarUri.isNotBlank()) {
+            AsyncImage(
+                model              = avatarUri,
+                contentDescription = "Profile avatar",
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+            )
+        } else {
+            Icon(
+                imageVector        = Icons.Default.Person,
+                contentDescription = "Profile avatar",
+                tint               = Color.White.copy(alpha = 0.80f),
+                modifier           = Modifier.fillMaxSize(0.55f),
+            )
+        }
     }
 }
 
@@ -320,20 +235,10 @@ private fun ProfileAvatar(modifier: Modifier = Modifier) {
 
 @Composable
 private fun IdentityBlock(uiState: ProfileUiState) {
-    val strings = ProfileStrings.forCode(LocalLanguageCode.current)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text  = strings.favoriteMemory,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontStyle  = FontStyle.Italic,
-                fontFamily = FontFamily.Cursive,
-                fontSize   = 15.sp,
-            ),
-            color = Color.White.copy(alpha = 0.65f),
-        )
         Text(
             text      = uiState.displayName.ifBlank { "Your Name" },
             style     = MaterialTheme.typography.displaySmall.copy(
@@ -345,17 +250,20 @@ private fun IdentityBlock(uiState: ProfileUiState) {
             color     = Color.White,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text      = "${strings.capturingSince} ${uiState.capturingSinceYear}",
-            style     = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 2.sp,
-                fontSize      = 11.sp,
-                fontWeight    = FontWeight.Medium,
-            ),
-            color     = ProfileGold,
-            textAlign = TextAlign.Center,
-        )
+        if (uiState.bio.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text      = uiState.bio,
+                style     = MaterialTheme.typography.bodySmall.copy(
+                    fontStyle  = FontStyle.Italic,
+                    fontFamily = FontFamily.Serif,
+                    fontSize   = 13.sp,
+                ),
+                color     = Color.White.copy(alpha = 0.55f),
+                textAlign = TextAlign.Center,
+                modifier  = Modifier.padding(horizontal = 32.dp),
+            )
+        }
     }
 }
 

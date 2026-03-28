@@ -12,5 +12,6 @@ internal data class CameraUiState(
     val permissionsChecked: Boolean = false,
     val isRecording: Boolean = false,
     val capturedUri: Uri? = null,
+    val showStoryPreview: Boolean = false,
     val showDestinationPicker: Boolean = false,
 )

@@ -7,6 +7,8 @@ internal data class CameraStrings(
     val flipCamera: String,
     val cameraAccessNeeded: String,
     val enableCameraPermission: String,
+    val publishStory: String,
+    val discardCapture: String,
 ) {
     companion object {
         fun forCode(code: String): CameraStrings = when (code) {
@@ -17,6 +19,8 @@ internal data class CameraStrings(
                 flipCamera             = "Cambiar cámara",
                 cameraAccessNeeded     = "Se necesita acceso a la cámara",
                 enableCameraPermission = "Activa el permiso de cámara en Ajustes para usar esta función.",
+                publishStory           = "Publicar historia",
+                discardCapture         = "Descartar",
             )
             "FR" -> CameraStrings(
                 closeCamera            = "Fermer la caméra",
@@ -25,6 +29,8 @@ internal data class CameraStrings(
                 flipCamera             = "Retourner la caméra",
                 cameraAccessNeeded     = "Accès à la caméra requis",
                 enableCameraPermission = "Activez l'autorisation de la caméra dans Paramètres pour utiliser cette fonctionnalité.",
+                publishStory           = "Publier la story",
+                discardCapture         = "Ignorer",
             )
             "IT" -> CameraStrings(
                 closeCamera            = "Chiudi fotocamera",
@@ -33,6 +39,8 @@ internal data class CameraStrings(
                 flipCamera             = "Cambia fotocamera",
                 cameraAccessNeeded     = "Accesso fotocamera necessario",
                 enableCameraPermission = "Abilita il permesso della fotocamera nelle Impostazioni per usare questa funzione.",
+                publishStory           = "Pubblica storia",
+                discardCapture         = "Scarta",
             )
             "ZH" -> CameraStrings(
                 closeCamera            = "关闭相机",
@@ -41,6 +49,8 @@ internal data class CameraStrings(
                 flipCamera             = "翻转相机",
                 cameraAccessNeeded     = "需要相机访问权限",
                 enableCameraPermission = "请在设置中启用相机权限以使用此功能。",
+                publishStory           = "发布故事",
+                discardCapture         = "丢弃",
             )
             "JA" -> CameraStrings(
                 closeCamera            = "カメラを閉じる",
@@ -49,6 +59,8 @@ internal data class CameraStrings(
                 flipCamera             = "カメラを反転",
                 cameraAccessNeeded     = "カメラのアクセスが必要です",
                 enableCameraPermission = "この機能を使用するには、設定でカメラの権限を有効にしてください。",
+                publishStory           = "ストーリーを公開",
+                discardCapture         = "破棄",
             )
             else -> CameraStrings( // EN
                 closeCamera            = "Close camera",
@@ -57,6 +69,8 @@ internal data class CameraStrings(
                 flipCamera             = "Flip camera",
                 cameraAccessNeeded     = "Camera access needed",
                 enableCameraPermission = "Enable camera permission in Settings to use this feature.",
+                publishStory           = "Publish story",
+                discardCapture         = "Discard",
             )
         }
     }

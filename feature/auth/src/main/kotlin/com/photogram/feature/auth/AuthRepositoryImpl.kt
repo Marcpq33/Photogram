@@ -94,11 +94,13 @@ internal class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signInWithGoogle(activity: Activity): PhotogramResult<Unit> {
         if (BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) {
+            Log.e(TAG, "signInWithGoogle: GOOGLE_WEB_CLIENT_ID is blank — add it to local.properties and rebuild")
             return PhotogramResult.Error(
                 exception = IllegalStateException("GOOGLE_WEB_CLIENT_ID not configured"),
-                message = "Google sign-in is not available. Please use email sign-in.",
+                message = "[Config] GOOGLE_WEB_CLIENT_ID is empty. Add the Web Client ID from Google Cloud Console to local.properties and rebuild.",
             )
         }
+        Log.d(TAG, "signInWithGoogle: client id present (${BuildConfig.GOOGLE_WEB_CLIENT_ID.take(8)}…), launching Credential Manager")
         return try {
             // Nonce: raw value sent to Supabase; hashed value sent to Google.
             // Supabase verifies that sha256(rawNonce) matches the nonce in the Google ID token.
@@ -114,20 +116,23 @@ internal class AuthRepositoryImpl @Inject constructor(
                 .addCredentialOption(option)
                 .build()
 
+            Log.d(TAG, "signInWithGoogle: calling CredentialManager.getCredential()")
             val response = CredentialManager.create(activity)
                 .getCredential(context = activity, request = request)
 
             val credential = response.credential
+            Log.d(TAG, "signInWithGoogle: credential received, type=${credential.type}")
             if (credential !is CustomCredential ||
                 credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
             ) {
                 return PhotogramResult.Error(
                     exception = IllegalStateException("Unexpected credential type: ${credential.type}"),
-                    message = "Google sign-in failed. Please try again.",
+                    message = "[CredentialType] Unexpected credential type: ${credential.type}. Expected Google ID token.",
                 )
             }
 
             val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            Log.d(TAG, "signInWithGoogle: Google ID token obtained, exchanging with Supabase")
 
             // Exchange the Google ID token for a Supabase session.
             // rawNonce (not hashed) is passed here — Supabase hashes it internally for verification.
@@ -137,7 +142,7 @@ internal class AuthRepositoryImpl @Inject constructor(
                 nonce = rawNonce
             }
 
-            Log.d(TAG, "signInWithGoogle: success")
+            Log.d(TAG, "signInWithGoogle: success — Supabase session established")
             PhotogramResult.Success(Unit)
         } catch (e: CancellationException) {
             throw e
@@ -146,17 +151,32 @@ internal class AuthRepositoryImpl @Inject constructor(
             Log.d(TAG, "signInWithGoogle: cancelled by user")
             PhotogramResult.Error(exception = e, message = null)
         } catch (e: NoCredentialException) {
-            Log.d(TAG, "signInWithGoogle: no Google account available on device")
+            Log.w(TAG, "signInWithGoogle: NoCredentialException — ${e.message}")
             PhotogramResult.Error(
                 exception = e,
-                message = "No Google account found on this device. Add one in Settings and try again.",
+                message = "[NoCredential] No Google account found on this device. Add one in Settings → Accounts and try again.",
             )
         } catch (e: Exception) {
-            Log.e(TAG, "signInWithGoogle: failed [${e::class.simpleName}]")
-            PhotogramResult.Error(
-                exception = e,
-                message = "Google sign-in failed. Please try again.",
-            )
+            // Common causes: wrong SHA-1 in Google Cloud Console, Supabase Google provider
+            // not enabled, token rejected (nonce mismatch), no Play Services on emulator.
+            Log.e(TAG, "signInWithGoogle: failed [${e::class.simpleName}] ${e.message}")
+            val cause = when {
+                e.message?.contains("10:", ignoreCase = true) == true ->
+                    "[SHA-1] Error code 10 — add your debug SHA-1 fingerprint to Google Cloud Console → Credentials → Android app."
+                e.message?.contains("developer_error", ignoreCase = true) == true ->
+                    "[Config] developer_error — check SHA-1 fingerprint and OAuth client ID match in Google Cloud Console."
+                e.message?.contains("sign_in_failed", ignoreCase = true) == true ->
+                    "[OAuth] sign_in_failed — verify Google provider is enabled in Supabase → Authentication → Providers."
+                e.message?.contains("invalid_grant", ignoreCase = true) == true ||
+                e.message?.contains("nonce", ignoreCase = true) == true ->
+                    "[Nonce] Token rejected — nonce mismatch between Google and Supabase. This is usually a library version issue."
+                e.message?.contains("supabase", ignoreCase = true) == true ||
+                e.message?.contains("401", ignoreCase = true) == true ->
+                    "[Supabase] Token rejected by Supabase — verify Client ID and Client Secret in Supabase → Authentication → Providers → Google."
+                else ->
+                    "[${e::class.simpleName}] ${e.message?.take(120) ?: "unknown error"}"
+            }
+            PhotogramResult.Error(exception = e, message = cause)
         }
     }
 

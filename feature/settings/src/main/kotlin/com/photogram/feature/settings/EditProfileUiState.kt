@@ -1,8 +1,11 @@
 package com.photogram.feature.settings
 
 data class EditProfileUiState(
-    val displayName: String = "Elena Marchetti",
-    val username: String = "elena.marchetti",
+    val displayName: String = "",
+    val username: String = "",
     val bio: String = "",
-    val email: String = "elena.marchetti@studio.it",
+    val email: String = "",
+    val avatarUri: String = "",
+    val isLoading: Boolean = true,
+    val saveSuccess: Boolean = false,
 )

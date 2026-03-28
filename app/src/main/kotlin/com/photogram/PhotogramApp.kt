@@ -3,6 +3,10 @@ package com.photogram
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.photogram.core.designsystem.LocalLanguageCode
@@ -51,6 +55,7 @@ fun PhotogramApp(
     startDestination: String,
     authEvent: SharedFlow<Unit>,
     languageCode: String = "EN",
+    onSignOut: () -> Unit = {},
 ) {
     val navController = rememberNavController()
 
@@ -80,11 +85,30 @@ fun PhotogramApp(
         )
         mainNavGraph(
             navController   = navController,
-            homeContent          = { HomeScreen(onNavigate = { route -> navController.navigate(route) }) },
-            cameraContent        = {
+            homeContent = {
+                val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+                val storyPublished by (savedStateHandle
+                    ?.getStateFlow("story_published", false)
+                    ?.collectAsStateWithLifecycle()
+                    ?: remember { mutableStateOf(false) })
+                HomeScreen(
+                    onNavigate               = { route -> navController.navigate(route) },
+                    storyPublished           = storyPublished,
+                    onStoryPublishedConsumed = { savedStateHandle?.remove<Boolean>("story_published") },
+                )
+            },
+            cameraContent = {
                 CameraScreen(
-                    onClose              = { navController.popBackStack() },
-                    onUploadPlaceholder  = { /* upload wired in next milestone */ },
+                    onClose          = { navController.popBackStack() },
+                    onStoryPublished = {
+                        // Write result to Home's back stack entry — consumed when Home recomposes.
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("story_published", true)
+                        // Navigate back to Home — must happen AFTER writing the flag.
+                        navController.popBackStack()
+                    },
+                    onUploadPlaceholder = { /* upload wired in next milestone */ },
                 )
             },
             notificationsContent = { NotificationsScreen(onNavigate = { route -> navController.navigate(route) }) },
@@ -101,6 +125,9 @@ fun PhotogramApp(
                     onNavigateToLanguage      = { navController.navigate(PhotogramDestination.LanguagePicker.route) },
                     onNavigateToStorage       = { navController.navigate(PhotogramDestination.StorageDetail.route) },
                     onLogOut                  = {
+                        // Sign out from Supabase + wipe DataStore userId so the next cold
+                        // start lands on AuthGraph, not MainGraph.
+                        onSignOut()
                         navController.navigate(PhotogramDestination.AuthGraph.route) {
                             popUpTo(PhotogramDestination.MainGraph.route) { inclusive = true }
                             launchSingleTop = true

@@ -8,6 +8,7 @@ data class AuthUiState(
     val error: String? = null,
     val isCreateMode: Boolean = true,
     val isPasswordVisible: Boolean = false,
+    val keepSignedIn: Boolean = false,
     val isLanguageSheetVisible: Boolean = false,
     val selectedLanguageCode: String = "EN",
     /**

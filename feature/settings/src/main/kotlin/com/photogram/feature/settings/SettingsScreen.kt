@@ -49,9 +49,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.photogram.core.designsystem.PhotogramTheme
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -294,12 +296,23 @@ private fun UserCard(
                 .background(AvatarBg),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector        = Icons.Default.Person,
-                contentDescription = null,
-                tint               = Color.White.copy(alpha = 0.80f),
-                modifier           = Modifier.size(28.dp),
-            )
+            if (uiState.avatarUri.isNotBlank()) {
+                AsyncImage(
+                    model              = uiState.avatarUri,
+                    contentDescription = null,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape),
+                )
+            } else {
+                Icon(
+                    imageVector        = Icons.Default.Person,
+                    contentDescription = null,
+                    tint               = Color.White.copy(alpha = 0.80f),
+                    modifier           = Modifier.size(28.dp),
+                )
+            }
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

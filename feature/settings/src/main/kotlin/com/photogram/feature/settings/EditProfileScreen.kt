@@ -1,6 +1,7 @@
 package com.photogram.feature.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import com.photogram.core.designsystem.LocalLanguageCode
 import com.photogram.core.designsystem.PhotogramTheme
 
@@ -79,6 +85,13 @@ private fun EditProfileContent(
     onBack: () -> Unit,
 ) {
     val strings = EditProfileStrings.forCode(LocalLanguageCode.current)
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            onAction(EditProfileUiAction.AvatarSelected(uri.toString()))
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -92,15 +105,18 @@ private fun EditProfileContent(
                 .navigationBarsPadding()
                 .padding(bottom = 40.dp),
         ) {
-            EpTopBar(onBack = onBack, onSave = { onAction(EditProfileUiAction.SaveClicked) }, strings = strings)
+            EpTopBar(onBack = onBack, strings = strings)
             Spacer(Modifier.height(24.dp))
 
-            // Avatar with edit badge
+            // Avatar with edit badge — tapping opens file picker
             Box(
                 modifier         = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    contentAlignment = Alignment.BottomEnd,
+                    modifier         = Modifier.clickable { launcher.launch(ActivityResultContracts.PickVisualMedia.ImageOnly) },
+                ) {
                     Box(
                         modifier = Modifier
                             .size(88.dp)
@@ -108,12 +124,23 @@ private fun EditProfileContent(
                             .background(EpAvatarBg),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector        = Icons.Default.Person,
-                            contentDescription = null,
-                            tint               = Color.White.copy(alpha = 0.80f),
-                            modifier           = Modifier.size(44.dp),
-                        )
+                        if (uiState.avatarUri.isNotBlank()) {
+                            AsyncImage(
+                                model              = uiState.avatarUri,
+                                contentDescription = null,
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier
+                                    .size(88.dp)
+                                    .clip(CircleShape),
+                            )
+                        } else {
+                            Icon(
+                                imageVector        = Icons.Default.Person,
+                                contentDescription = null,
+                                tint               = Color.White.copy(alpha = 0.80f),
+                                modifier           = Modifier.size(44.dp),
+                            )
+                        }
                     }
                     Box(
                         modifier = Modifier
@@ -232,6 +259,7 @@ private fun EditProfileContent(
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(EpTerracotta)
+                    .clickable { onAction(EditProfileUiAction.SaveClicked) }
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -243,6 +271,19 @@ private fun EditProfileContent(
                     style      = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp),
                 )
             }
+
+            if (uiState.saveSuccess) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text      = strings.saveSuccessMessage,
+                    color     = EpTerracotta,
+                    fontSize  = 14.sp,
+                    modifier  = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -250,7 +291,7 @@ private fun EditProfileContent(
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun EpTopBar(onBack: () -> Unit, onSave: () -> Unit, strings: EditProfileStrings) {
+private fun EpTopBar(onBack: () -> Unit, strings: EditProfileStrings) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,15 +317,6 @@ private fun EpTopBar(onBack: () -> Unit, onSave: () -> Unit, strings: EditProfil
             ),
             color    = Color.White,
             modifier = Modifier.align(Alignment.Center),
-        )
-        Text(
-            text     = strings.save,
-            color    = EpTerracotta,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 16.dp),
         )
     }
 }

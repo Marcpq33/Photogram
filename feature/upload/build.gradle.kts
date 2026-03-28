@@ -16,6 +16,11 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(project(":core:designsystem"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:datastore"))
+
+    // Image loading (story preview overlay)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     // CameraX
     implementation(libs.camerax.core)

@@ -38,6 +38,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -271,12 +273,22 @@ private fun AuthContent(
                                     Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = if (uiState.isPasswordVisible)
                                     strings.hidePassword else strings.showPassword,
-                                tint = IconTint,
+                                tint = FieldHint,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
                     },
                 )
+
+                // Keep signed in — Sign in mode only
+                if (!uiState.isCreateMode) {
+                    Spacer(Modifier.height(14.dp))
+                    KeepSignedInRow(
+                        checked = uiState.keepSignedIn,
+                        label = strings.keepSignedIn,
+                        onToggle = { onAction(AuthUiAction.ToggleKeepSignedIn) },
+                    )
+                }
 
                 uiState.error?.let { err ->
                     Spacer(Modifier.height(8.dp))
@@ -453,11 +465,6 @@ private fun SocialRow(
             label = strings.continueWithGoogle,
             modifier = Modifier.fillMaxWidth(),
         )
-        AppleButton(
-            onClick = { onAction(AuthUiAction.AppleSignInClicked) },
-            label = strings.continueWithApple,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -488,50 +495,12 @@ private fun GoogleButton(onClick: () -> Unit, label: String, modifier: Modifier 
 }
 
 @Composable
-private fun AppleButton(onClick: () -> Unit, label: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .height(54.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF121214))
-            .border(0.5.dp, SocialDarkStroke, RoundedCornerShape(18.dp))
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            AppleLogoIcon(modifier = Modifier.size(18.dp), tint = Color.White)
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = label,
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.SansSerif,
-            )
-        }
-    }
-}
-
-@Composable
 private fun GoogleGIcon(modifier: Modifier = Modifier) {
     Icon(
         painter = painterResource(R.drawable.ic_google_g),
         contentDescription = null,
         modifier = modifier,
         tint = Color.Unspecified,
-    )
-}
-
-@Composable
-private fun AppleLogoIcon(modifier: Modifier = Modifier, tint: Color = Color.White) {
-    Icon(
-        painter = painterResource(R.drawable.ic_apple),
-        contentDescription = null,
-        modifier = modifier,
-        tint = tint,
     )
 }
 
@@ -653,6 +622,41 @@ private fun GlassInputField(
             }
         },
     )
+}
+
+// ── Keep signed in checkbox ────────────────────────────────────────────────────
+
+@Composable
+private fun KeepSignedInRow(
+    checked: Boolean,
+    label: String,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onToggle,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { onToggle() },
+            colors = CheckboxDefaults.colors(
+                checkedColor = Gold,
+                uncheckedColor = Color.White.copy(alpha = 0.35f),
+                checkmarkColor = Color(0xFF1A1A18),
+            ),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextMuted,
+        )
+    }
 }
 
 // ── CTA button ─────────────────────────────────────────────────────────────────

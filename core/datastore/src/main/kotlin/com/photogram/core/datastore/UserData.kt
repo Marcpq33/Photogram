@@ -5,6 +5,13 @@ data class UserData(
     val isOnboardingComplete: Boolean,
     val language: String = "EN",
     val isProtoMode: Boolean = false,
+    val keepSignedIn: Boolean = false,
+    val inviteWelcomeDisplayCount: Int = 0,
+    val displayName: String = "",
+    val username: String = "",
+    val bio: String = "",
+    val email: String = "",
+    val avatarUri: String = "",
 ) {
     /**
      * True when proto/demo mode is explicitly active (set via dev bypass button).
@@ -12,4 +19,7 @@ data class UserData(
      * flip it off while the prototype is being used.
      */
     val isDemoMode: Boolean get() = isProtoMode
+
+    /** True only on the user's very first Home entry — auto-shows invite popup exactly once. */
+    val shouldShowInviteWelcome: Boolean get() = inviteWelcomeDisplayCount == 0
 }

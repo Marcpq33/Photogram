@@ -8,6 +8,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,12 +19,14 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
-    supabaseClient: SupabaseClient,
+    private val supabaseClient: SupabaseClient,
 ) : ViewModel() {
 
     // Fired once when the app transitions from signed-out → signed-in during a live session.
@@ -33,9 +37,10 @@ class AppViewModel @Inject constructor(
 
     // null = session state not yet resolved; PhotogramApp renders nothing until resolved.
     // isProtoMode = true routes straight to MainGraph so proto content persists across restarts.
+    // keepSignedIn must be true for a stored userId to auto-enter; false forces AuthGraph on cold start.
     val startDestination: StateFlow<String?> = userPreferencesRepository.userData
         .map { userData ->
-            if (userData.userId != null || userData.isProtoMode) PhotogramDestination.MainGraph.route
+            if ((userData.userId != null && userData.keepSignedIn) || userData.isProtoMode) PhotogramDestination.MainGraph.route
             else PhotogramDestination.AuthGraph.route
         }
         .stateIn(
@@ -71,9 +76,35 @@ class AppViewModel @Inject constructor(
                     is SessionStatus.Authenticated -> {
                         val userId = status.session.user?.id ?: return@onEach
                         userPreferencesRepository.setUserId(userId)
-                        // Only emit authEvent for new sessions. Storage-restored sessions
-                        // are handled by startDestination (DataStore already has the userId).
+                        // Persist email from Supabase auth so Edit Profile can read it
+                        // without requiring a Postgrest dependency in the settings module.
+                        val email = status.session.user?.email
+                        if (!email.isNullOrEmpty()) {
+                            userPreferencesRepository.setEmail(email)
+                        }
+                        // On fresh sign-in, seed displayName from OAuth user metadata
+                        // (Google/Apple provide full_name; email sign-up does not).
+                        // Only seeds if DataStore displayName is still blank so that a user
+                        // who edited their display name via Edit Profile is not overwritten.
                         if (status.isNew) {
+                            val metaName = try {
+                                status.session.user?.userMetadata
+                                    ?.get("full_name")
+                                    ?.jsonPrimitive
+                                    ?.contentOrNull
+                                    ?.trim()
+                                    ?.takeIf { it.isNotBlank() }
+                            } catch (_: Exception) { null }
+                            if (!metaName.isNullOrBlank()) {
+                                val current = userPreferencesRepository.userData.first()
+                                if (current.displayName.isBlank()) {
+                                    userPreferencesRepository.setProfile(
+                                        displayName = metaName,
+                                        username    = current.username,
+                                        bio         = current.bio,
+                                    )
+                                }
+                            }
                             _authEvent.tryEmit(Unit)
                         }
                     }
@@ -84,5 +115,28 @@ class AppViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    /**
+     * Signs out from Supabase and clears the local session.
+     *
+     * Calling [supabaseClient.auth.signOut] emits [SessionStatus.NotAuthenticated], which
+     * [observeSession] catches and uses to call [userPreferencesRepository.clearSession].
+     * This ensures DataStore is wiped so the next cold start lands on AuthGraph.
+     *
+     * Navigation to AuthGraph is the caller's responsibility (handled in PhotogramApp.onLogOut).
+     * If the network sign-out fails, we clear the local session anyway so the user is not
+     * stuck on MainGraph.
+     */
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                supabaseClient.auth.signOut()
+            } catch (e: Exception) {
+                // Remote sign-out failed (network error, token already expired, etc.).
+                // Clear local session regardless so DataStore userId is wiped.
+                userPreferencesRepository.clearSession()
+            }
+        }
     }
 }
