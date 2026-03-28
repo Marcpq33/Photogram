@@ -85,3 +85,7 @@ android-sdk/photogram.zip
 *.env
 *.env.*
 photogram.zip
+-e 
+# Environment files
+*.env
+*.env.*
